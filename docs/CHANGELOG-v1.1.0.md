@@ -1,4 +1,4 @@
-# CHANGELOG v1.1.0
+# CHANGELOG v1.1.2 → v1.1.0
 
 ## 新增：真实浏览器模式（Real Taskbar Browser Mode）
 
@@ -32,3 +32,8 @@
 - DOM 事实：动作中 `opacity:1`、`img.naturalWidth=90`、`pointer-events:none`、唯一 `#__dsh_hand`；动作后 `opacity:0`。
 - 真实浏览器打开证据：`open-in-user-browser chrome https://example.com/?dsh=taskbar-chrome` →
   Chrome 主进程命令行**无** `--user-data-dir`（真实 profile），桥可见该标签页。
+
+## v1.1.2
+
+- 修复 `ego_real` 的按浏览器路由：命令的 `client` 作为桥的顶层字段传入，不再落到错误浏览器（此前会报 `No tab with id`）。
+- 文档补充：严格 CSP 站点（GitHub）下 `js`/鲸鱼娘动画降级；扩展重载一次以启用看门狗/keepalive 补丁。
