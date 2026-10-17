@@ -1,0 +1,47 @@
+{
+  "manifest_version": 3,
+  "name": "DSH Local Browser Bridge",
+  "version": "0.1.0",
+  "description": "Local bridge that lets the DSH agent inspect, click and fill the user's REAL browser tabs (no profile copying, no remote-debugging port).",
+  "permissions": [
+    "tabs",
+    "scripting",
+    "activeTab",
+    "storage",
+    "alarms"
+  ],
+  "host_permissions": [
+    "<all_urls>",
+    "http://127.0.0.1:18765/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_idle",
+      "all_frames": false
+    }
+  ],
+  "action": {
+    "default_title": "DSH Local Browser Bridge — 鲸鱼娘",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "32": "icons/icon-32.png",
+      "48": "icons/icon-48.png",
+      "128": "icons/icon-128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  }
+}

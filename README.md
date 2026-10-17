@@ -4,6 +4,54 @@
 > 保留原版全部 32 个 `ego_*` 工具、观察窗与运行时，只改"agent 浏览器用哪个浏览器、登录态从哪来"。
 > 本机验证环境：Windows 11 / Chrome 155.0.8059.80 / Edge 155.0.4283.45 / DSH 桌面 0.2.1-rc.1 / node v24.21.0。
 
+## 双模式（v1.1.0 起）
+
+| 模式 | 用什么浏览器 | 登录态 | 适合 |
+|---|---|---|---|
+| **真实浏览器模式（默认/推荐）** | **你任务栏里的 Chrome/Edge**（真实 profile） | 你自己的，天然有效 | 日常操作、需要登录的站点、要让用户看见你在做什么 |
+| Agent 浏览器模式（原版能力，保留） | 克隆登录态的独立 agent 浏览器 | 从源浏览器最小复制 + 白名单裁剪 | 无人值守的批量自动化、不能干扰用户窗口的任务 |
+
+### 真实浏览器模式怎么用
+
+1. **第一次**：在 Chrome 打开 `chrome://extensions/`、Edge 打开 `edge://extensions/` →
+   开发人员模式 → **加载已解压的扩展程序** → 选择
+   `E:\DeepSeek 插件目录\real-browser\extension`（安装后用 `ego_real action=extension` 可随时查路径）。
+2. 之后让 agent 用 **`ego_real`** 工具：
+   - `action=open` → 从**任务栏方式**打开你的真实浏览器（等同于你点任务栏图标，**不是** agent 浏览器）
+   - `action=snapshot` → 语义快照（可点元素 + `[ref]`），并提示 `likelyLoginPage`
+   - `action=hand_read` → **鲸鱼娘光标**逐块滚动阅读（你能看见它在页面上走）
+   - `action=hand_click / hand_fill` → 鲸鱼娘光标先指到目标、高亮，再点击/填写（截图留证）
+   - `action=tabs / navigate / page_info / read / js / scroll / screenshot / wait_selector / wait_url`
+3. **登录策略**：遇到需要登录/2FA 的页面，agent **会停下来叫你**，由你本人在真实浏览器里登录，绝不尝试自动登录。
+
+### 效果描述（你能看见什么）
+
+- 页面左上会出现 **鲸鱼娘（蓝色 Q 版鲸鱼女仆）光标** + 粉色小标签：`阅读中…` / `点击` / `填写`
+- 正在读/点的元素会 **粉色描边高亮**；阅读时页面 **平滑滚动逐块扫过**
+- 动作结束光标自动淡出，不挡鼠标（`pointer-events: none`）
+- 全程发生在**你自己的浏览器窗口**里，可以随时接管
+
+### 能力对照（原版 agent 浏览器 → 真实浏览器）
+
+| 原版 `ego_*` 能力 | 真实浏览器 `ego_real` |
+|---|---|
+| `ego_snapshot` | `action=snapshot`（带 ref，含登录页判断） |
+| `ego_navigate` | `action=navigate` / `open` |
+| `ego_click` / `ego_fill` | `action=click` / `fill` / `hand_click` / `hand_fill` |
+| `ego_page_info` / `ego_read_element` | `action=page_info` / `read` |
+| `ego_screenshot` | `action=screenshot`（存到 `<home>\real-browser-shots\`） |
+| `ego_js` | `action=js` |
+| `ego_scroll` / `ego_wait_for_*` | `action=scroll` / `wait_selector` / `wait_url` |
+| 标签页管理 | `action=tabs`（另含 open/close 见 CLI） |
+| 观察窗实时画面 | 真实浏览器窗口本身 + 鲸鱼娘光标 + 每次动作截图 |
+
+### 技术边界（为什么不是直接接管默认 profile）
+
+Chrome/Edge 136+ **禁止在默认 profile 上开远程调试端口**（实测 Edge 155 同样拒绝）；
+复制 profile 后 Edge 的 Aster App-Bound 加密又解不开登录 cookie。所以真实浏览器模式走
+**扩展桥**：扩展在你浏览器内执行 DOM 操作 + 通过本机 127.0.0.1:18765 长轮询接收指令，
+不复制 profile、不读 cookie、不开调试端口。桥与扩展源码在 `real-browser/` 下（可审计）。
+
 ## 与原版的差异（先看这个）
 
 | 项 | 原版 dsh-ego-browser | 本 fork |

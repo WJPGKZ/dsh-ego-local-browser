@@ -1,98 +1,99 @@
 {
-  "name": "dsh-ego-local-browser",
-  "version": "1.0.2",
-  "description": "Local-browser fork of dsh-ego-browser: structured browser-automation tools (32 ego_*) that drive the vendored ego-lite runtime against the user's own installed Chrome/Edge, inheriting real login state from a minimal copy (Local State + Cookies) of the source profile, trimmed to a configurable domain allowlist, plus a realtime watch panel, an ego_local_doctor diagnostic tool and a 本地浏览器 settings page. The source profile is never written; all data lives on the configured E: home.",
-  "type": "module",
-  "main": "./lib/index.js",
-  "exports": {
-    ".": "./lib/index.js",
-    "./client": "./lib/client.js",
-    "./dsh-plugin.json": "./dsh-plugin.json",
-    "./package.json": "./package.json"
-  },
-  "files": [
-    "lib/",
-    "bin/",
-    "runtime/",
-    "cordis.patch.yml",
-    "dsh-plugin.json",
-    "THIRD_PARTY_NOTICES.md",
-    "docs/",
-    "!**/*.map"
-  ],
-  "dsh": {
-    "engines": {
-      "dsh": ">=0.1.7-rc.2"
-    },
-    "bundle": {
-      "patch": "./cordis.patch.yml"
-    },
-    "client": {
-      "platform": "web",
-      "inject": [
-        "@deepseek-ai/dsh-client-locale",
-        "@deepseek-ai/dsh-client-ui-settings",
-        "@deepseek-ai/dsh-client-ui-settings-plugins"
-      ]
-    }
-  },
-  "scripts": {
-    "test": "node --test"
-  },
-  "dependencies": {
-    "@deepseek-ai/schemastery": "^3.18.3",
-    "schemastery": "^3.18.0"
-  },
-  "peerDependencies": {
-    "@deepseek-ai/dsh-client-locale": ">=0.1.2-rc.1",
-    "@deepseek-ai/dsh-client-store": ">=0.1.2-rc.1",
-    "@deepseek-ai/dsh-client-ui-settings": ">=0.1.2-rc.1",
-    "@deepseek-ai/dsh-client-ui-settings-plugins": ">=0.1.2-rc.1",
-    "@deepseek-ai/dsh-client-ui-slots": ">=0.1.2-rc.1",
-    "@deepseek-ai/dsh-settings": ">=0.1.2-rc.1",
-    "@deepseek-ai/dsh-tools": ">=0.1.2-rc.1",
-    "react": "^18.2.0",
-    "schemastery": "^3.18.0"
-  },
-  "peerDependenciesMeta": {
-    "@deepseek-ai/dsh-client-locale": {
-      "optional": true
-    },
-    "@deepseek-ai/dsh-client-store": {
-      "optional": true
-    },
-    "@deepseek-ai/dsh-client-ui-settings": {
-      "optional": true
-    },
-    "@deepseek-ai/dsh-client-ui-settings-plugins": {
-      "optional": true
-    },
-    "@deepseek-ai/dsh-client-ui-slots": {
-      "optional": true
-    },
-    "@deepseek-ai/dsh-settings": {
-      "optional": true
-    },
-    "@deepseek-ai/dsh-tools": {
-      "optional": true
-    },
-    "react": {
-      "optional": true
-    },
-    "schemastery": {
-      "optional": true
-    }
-  },
-  "engines": {
-    "node": ">=22"
-  },
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/Fisfzy/dsh-ego-browser.git"
-  },
-  "dshLocalBrowser": {
-    "forkedFrom": "dsh-ego-browser@0.8.6",
-    "home": "E:\\AI\\DeepSeek\\data\\dsh-ego-local-browser"
-  }
+    "name":  "dsh-ego-local-browser",
+    "version":  "1.1.1",
+    "description":  "Real-taskbar-browser agent for DSH: drives the user\u0027s OWN Chrome/Edge window (real profile, real logins) through a bundled MV3 extension bridge with a visible whale-maid (鲸鱼娘) cursor — click/fill/read/snapshot/screenshot with the user watching; no profile copy, no cookie reading, no auto-login. The original cloned-profile agent browser (32 ego_* tools) remains as a fallback for unattended automation.",
+    "type":  "module",
+    "main":  "./lib/index.js",
+    "exports":  {
+                    ".":  "./lib/index.js",
+                    "./client":  "./lib/client.js",
+                    "./dsh-plugin.json":  "./dsh-plugin.json",
+                    "./package.json":  "./package.json"
+                },
+    "files":  [
+                  "lib/",
+                  "bin/",
+                  "runtime/",
+                  "real-browser/",
+                  "cordis.patch.yml",
+                  "dsh-plugin.json",
+                  "THIRD_PARTY_NOTICES.md",
+                  "docs/",
+                  "!**/*.map"
+              ],
+    "dsh":  {
+                "engines":  {
+                                "dsh":  "\u003e=0.1.7-rc.2"
+                            },
+                "bundle":  {
+                               "patch":  "./cordis.patch.yml"
+                           },
+                "client":  {
+                               "platform":  "web",
+                               "inject":  [
+                                              "@deepseek-ai/dsh-client-locale",
+                                              "@deepseek-ai/dsh-client-ui-settings",
+                                              "@deepseek-ai/dsh-client-ui-settings-plugins"
+                                          ]
+                           }
+            },
+    "scripts":  {
+                    "test":  "node --test"
+                },
+    "dependencies":  {
+                         "@deepseek-ai/schemastery":  "^3.18.3",
+                         "schemastery":  "^3.18.0"
+                     },
+    "peerDependencies":  {
+                             "@deepseek-ai/dsh-client-locale":  "\u003e=0.1.2-rc.1",
+                             "@deepseek-ai/dsh-client-store":  "\u003e=0.1.2-rc.1",
+                             "@deepseek-ai/dsh-client-ui-settings":  "\u003e=0.1.2-rc.1",
+                             "@deepseek-ai/dsh-client-ui-settings-plugins":  "\u003e=0.1.2-rc.1",
+                             "@deepseek-ai/dsh-client-ui-slots":  "\u003e=0.1.2-rc.1",
+                             "@deepseek-ai/dsh-settings":  "\u003e=0.1.2-rc.1",
+                             "@deepseek-ai/dsh-tools":  "\u003e=0.1.2-rc.1",
+                             "react":  "^18.2.0",
+                             "schemastery":  "^3.18.0"
+                         },
+    "peerDependenciesMeta":  {
+                                 "@deepseek-ai/dsh-client-locale":  {
+                                                                        "optional":  true
+                                                                    },
+                                 "@deepseek-ai/dsh-client-store":  {
+                                                                       "optional":  true
+                                                                   },
+                                 "@deepseek-ai/dsh-client-ui-settings":  {
+                                                                             "optional":  true
+                                                                         },
+                                 "@deepseek-ai/dsh-client-ui-settings-plugins":  {
+                                                                                     "optional":  true
+                                                                                 },
+                                 "@deepseek-ai/dsh-client-ui-slots":  {
+                                                                          "optional":  true
+                                                                      },
+                                 "@deepseek-ai/dsh-settings":  {
+                                                                   "optional":  true
+                                                               },
+                                 "@deepseek-ai/dsh-tools":  {
+                                                                "optional":  true
+                                                            },
+                                 "react":  {
+                                               "optional":  true
+                                           },
+                                 "schemastery":  {
+                                                     "optional":  true
+                                                 }
+                             },
+    "engines":  {
+                    "node":  "\u003e=22"
+                },
+    "license":  "MIT",
+    "repository":  {
+                       "type":  "git",
+                       "url":  "git+https://github.com/Fisfzy/dsh-ego-browser.git"
+                   },
+    "dshLocalBrowser":  {
+                            "forkedFrom":  "dsh-ego-browser@0.8.6",
+                            "home":  "E:\\AI\\DeepSeek\\data\\dsh-ego-local-browser"
+                        }
 }
