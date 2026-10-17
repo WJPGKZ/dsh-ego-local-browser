@@ -52,18 +52,33 @@ async function waitForStatus(port, timeoutMs = 3000) {
   throw new Error("bridge did not become ready");
 }
 
+async function sendHeartbeat(port, ownerNonce) {
+  const response = await fetch(`http://127.0.0.1:${port}/heartbeat?token=${TOKEN}`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ ownerNonce }),
+  });
+  assert.equal(response.status, 200);
+}
+
 test("bridge exposes identity and rejects duplicate ports", async () => {
   const port = await freePort();
-  const first = start(port, { DSH_BRIDGE_OWNER_NONCE: "identity-test", DSH_BRIDGE_OWNER_LEASE_MS: "2000" });
+  const ownerNonce = "identity-test";
+  const first = start(port, { DSH_BRIDGE_OWNER_NONCE: ownerNonce, DSH_BRIDGE_OWNER_LEASE_MS: "2000" });
+  const heartbeat = setInterval(() => {
+    sendHeartbeat(port, ownerNonce).catch(() => {});
+  }, 500);
   try {
     const status = await waitForStatus(port);
     assert.equal(status.bridgeId, "dsh-real-browser-bridge");
-    assert.equal(status.ownerNonce, "identity-test");
+    assert.equal(status.ownerNonce, ownerNonce);
+    await sendHeartbeat(port, ownerNonce);
 
     const duplicate = start(port, { DSH_BRIDGE_OWNER_NONCE: "duplicate-test" });
     const result = await waitForExit(duplicate);
     assert.equal(result.code, 1);
   } finally {
+    clearInterval(heartbeat);
     first.kill();
     await waitForExit(first).catch(() => {});
   }

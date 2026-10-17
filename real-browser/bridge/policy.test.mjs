@@ -12,6 +12,41 @@ test("default routes supported page tools to real browser when connected", () =>
     action: "click",
     fallback: false,
     reason: "real browser bridge is connected",
+    clientRole: "real",
+    clientSelection: "connected real browser client",
+  });
+});
+
+test("real mode does not select an agent-only client", () => {
+  const clients = { chrome: { role: "agent" } };
+  const realConnected = hasConnectedRealClient({ clients });
+  assert.equal(realConnected, false);
+  assert.deepEqual(resolveBrowserRoute({
+    toolName: "ego_click",
+    mode: "real",
+    realConnected,
+  }), {
+    route: "agent",
+    action: "click",
+    fallback: true,
+    reason: "real browser bridge is not connected; safely falling back to agent browser",
+    clientRole: "agent",
+    clientSelection: "no connected real client; fallback",
+  });
+});
+
+test("agent mode is forced without fallback", () => {
+  assert.deepEqual(resolveBrowserRoute({
+    toolName: "ego_click",
+    mode: "agent",
+    realConnected: true,
+  }), {
+    route: "agent",
+    action: "click",
+    fallback: false,
+    reason: "agent mode was explicitly selected",
+    clientRole: "agent",
+    clientSelection: "browserMode=agent",
   });
 });
 

@@ -3,7 +3,7 @@
  *
  * Protocol
  * --------
- * - the Chrome/Edge extension long-polls GET /poll?token=..&client=<chrome|edge>
+ * - the Chrome/Edge extension long-polls GET /poll?token=..&client=<chrome|edge>&clientId=..
  * - the agent CLI enqueues a command through POST /enqueue and waits for the
  *   result on the same HTTP response
  * - the extension posts the result back through POST /result
@@ -53,11 +53,11 @@ let lastOwnerHeartbeatAt = STARTED_AT;
 const waiters = new Map();
 /** pending commands (not yet handed to a client) */
 const queue = [];
-/** client -> array of open /poll responses (FIFO) */
+/** clientId -> array of open /poll responses (FIFO) */
 const pollers = new Map();
-/** client -> last poll timestamp */
+/** clientId -> { browser, role, userAgent, lastSeen } */
 const clients = new Map();
-/** client -> poll statistics { count, lastAt, lastGapMs, maxGapMs, lastDeliverAt } */
+/** clientId -> poll statistics { count, lastAt, lastGapMs, maxGapMs, lastDeliverAt } */
 const pollStats = new Map();
 
 function log(...args) {
@@ -109,8 +109,8 @@ function auth(url) {
  * command queue + per-client poll delivery
  * ------------------------------------------------------------------ */
 
-function takeCommandFor(client) {
-  const index = queue.findIndex((command) => !command.client || command.client === client);
+function takeCommandFor(clientId, browser) {
+  const index = queue.findIndex((command) => !command.client || command.client === browser);
   if (index < 0) return null;
   return queue.splice(index, 1)[0];
 }
@@ -119,18 +119,18 @@ function closePoller(poller) {
   if (poller.closed) return;
   poller.closed = true;
   clearTimeout(poller.timer);
-  const list = pollers.get(poller.client);
+  const list = pollers.get(poller.clientId);
   if (!list) return;
   const index = list.indexOf(poller);
   if (index >= 0) list.splice(index, 1);
-  if (list.length === 0) pollers.delete(poller.client);
+  if (list.length === 0) pollers.delete(poller.clientId);
 }
 
-function pollersFor(client) {
-  let list = pollers.get(client);
+function pollersFor(clientId) {
+  let list = pollers.get(clientId);
   if (!list) {
     list = [];
-    pollers.set(client, list);
+    pollers.set(clientId, list);
   }
   return list;
 }
@@ -139,50 +139,50 @@ function pollersFor(client) {
  * Hand the oldest deliverable command to the oldest open poll of `client`.
  * Returns true when a command was delivered.
  */
-function pollStatsFor(client) {
-  let stats = pollStats.get(client);
+function pollStatsFor(clientId) {
+  let stats = pollStats.get(clientId);
   if (!stats) {
     stats = { count: 0, lastAt: 0, lastGapMs: 0, maxGapMs: 0, lastDeliverAt: 0 };
-    pollStats.set(client, stats);
+    pollStats.set(clientId, stats);
   }
   return stats;
 }
 
-function notePoll(client) {
-  const stats = pollStatsFor(client);
+function notePoll(clientId) {
+  const stats = pollStatsFor(clientId);
   const now = Date.now();
   const gap = stats.lastAt ? now - stats.lastAt : 0;
   stats.count += 1;
   stats.lastAt = now;
   stats.lastGapMs = gap;
   if (gap > stats.maxGapMs) stats.maxGapMs = gap;
-  if (TRACE_POLLS) log(`poll-open client=${client} gapMs=${gap} count=${stats.count}`);
+  if (TRACE_POLLS) log(`poll-open clientId=${clientId} gapMs=${gap} count=${stats.count}`);
 }
 
-function announceDelivery(command, client) {
+function announceDelivery(command, clientId) {
   command.deliveredAt = Date.now();
-  command.deliveredTo = client;
-  pollStatsFor(client).lastDeliverAt = command.deliveredAt;
-  log(`deliver client=${client} cmd=${command.cmd} id=${command.id} waitedMs=${command.deliveredAt - command.queuedAt}`);
+  command.deliveredTo = clientId;
+  pollStatsFor(clientId).lastDeliverAt = command.deliveredAt;
+  log(`deliver clientId=${clientId} cmd=${command.cmd} id=${command.id} waitedMs=${command.deliveredAt - command.queuedAt}`);
 }
 
 /**
  * Hand the oldest deliverable command to the oldest open poll of `client`.
  * Returns true when a command was delivered.
  */
-function deliver(client) {
+function deliver(clientId) {
   for (;;) {
-    const list = pollers.get(client);
+    const list = pollers.get(clientId);
     if (!list || list.length === 0) return false;
     const poller = list[0];
     if (poller.closed) {
       closePoller(poller);
       continue;
     }
-    const command = takeCommandFor(client);
+    const command = takeCommandFor(clientId, clients.get(clientId)?.browser);
     if (!command) return false;
     closePoller(poller);
-    announceDelivery(command, client);
+    announceDelivery(command, clientId);
     json(poller.res, 200, command);
     return true;
   }
@@ -191,6 +191,13 @@ function deliver(client) {
 function deliverAny() {
   for (const client of [...pollers.keys()]) {
     if (deliver(client)) return true;
+  }
+  return false;
+}
+
+function deliverBrowser(browser) {
+  for (const [clientId, info] of clients) {
+    if (info.browser === browser && deliver(clientId)) return true;
   }
   return false;
 }
@@ -252,8 +259,8 @@ setInterval(() => {
       error: `bridge-timeout after ${COMMAND_TIMEOUT_MS}ms: ${waiter.command.cmd} (${delivered})`,
     });
   }
-  for (const [client, lastSeen] of clients) {
-    if (now - lastSeen > 10 * 60 * 1000) clients.delete(client);
+  for (const [clientId, info] of clients) {
+    if (now - info.lastSeen > 10 * 60 * 1000) clients.delete(clientId);
   }
 }, 5000).unref();
 
@@ -270,23 +277,26 @@ const server = createServer(async (req, res) => {
 
     /* ---------------------------- poll ---------------------------- */
     if (req.method === "GET" && url.pathname === "/poll") {
-      const client = String(url.searchParams.get("client") || "unknown");
-      clients.set(client, Date.now());
-      notePoll(client);
+      const browser = String(url.searchParams.get("client") || "unknown");
+      const clientId = String(url.searchParams.get("clientId") || `legacy:${browser}`);
+      const role = url.searchParams.get("role") === "agent" ? "agent" : "real";
+      const userAgent = String(url.searchParams.get("userAgent") || "");
+      clients.set(clientId, { browser, role, userAgent, lastSeen: Date.now() });
+      notePoll(clientId);
       // A fresh poll must itself take a queued command: commands can be enqueued
       // in the small window between one poll timing out and the next arriving,
       // and no pre-existing poller exists then (this was a "command sits queued
       // forever" bug; never rely on enqueue-time wake alone).
-      const queuedForClient = takeCommandFor(client);
+      const queuedForClient = takeCommandFor(clientId, browser);
       if (queuedForClient) {
-        announceDelivery(queuedForClient, client);
+        announceDelivery(queuedForClient, clientId);
         return json(res, 200, queuedForClient);
       }
-      if (deliver(client)) return;
+      if (deliver(clientId)) return;
       if (res.writableEnded) return;
 
-      const poller = { client, res, timer: null, closed: false };
-      const list = pollersFor(client);
+      const poller = { clientId, res, timer: null, closed: false };
+      const list = pollersFor(clientId);
       list.push(poller);
       // Do not let a zombie tab accumulate open polls.
       while (list.length > 4) {
@@ -296,12 +306,12 @@ const server = createServer(async (req, res) => {
           stale.res.writeHead(204, { "access-control-allow-origin": "*" });
           stale.res.end();
         }
-        log(`poll-flood client=${client}: closed a stale poll`);
+        log(`poll-flood clientId=${clientId}: closed a stale poll`);
       }
       poller.timer = setTimeout(() => {
         if (poller.closed) return;
         closePoller(poller);
-        if (TRACE_POLLS) log(`poll-timeout client=${client} hold=${POLL_HOLD_MS}ms`);
+        if (TRACE_POLLS) log(`poll-timeout clientId=${clientId} hold=${POLL_HOLD_MS}ms`);
         if (!res.writableEnded) {
           res.writeHead(204, { "access-control-allow-origin": "*" });
           res.end();
@@ -324,14 +334,18 @@ const server = createServer(async (req, res) => {
         startedAt: STARTED_AT,
         uptimeMs: now - STARTED_AT,
         clients: Object.fromEntries(
-          [...clients.entries()].map(([name, at]) => {
-            const stats = pollStatsFor(name);
+          [...clients.entries()].map(([clientId, info]) => {
+            const stats = pollStatsFor(clientId);
             return [
-              name,
+              clientId,
               {
-                lastSeenMsAgo: now - at,
-                stale: now - at > CLIENT_STALE_MS,
-                polls: pollers.get(name)?.length ?? 0,
+                browser: info.browser,
+                role: info.role,
+                clientId,
+                userAgent: info.userAgent,
+                lastSeenMsAgo: now - info.lastSeen,
+                stale: now - info.lastSeen > CLIENT_STALE_MS,
+                polls: pollers.get(clientId)?.length ?? 0,
                 pollCount: stats.count,
                 lastPollMsAgo: stats.lastAt ? now - stats.lastAt : null,
                 lastPollGapMs: stats.lastGapMs,
@@ -341,6 +355,14 @@ const server = createServer(async (req, res) => {
             ];
           }),
         ),
+        byBrowser: [...clients.entries()].reduce((groups, [clientId, info]) => {
+          const group = groups[info.browser] || { total: 0, real: 0, agent: 0, clients: [] };
+          group.total += 1;
+          group[info.role === "agent" ? "agent" : "real"] += 1;
+          group.clients.push(clientId);
+          groups[info.browser] = group;
+          return groups;
+        }, {}),
         queued: queue.length,
         queue: queue.map((command) => ({
           id: command.id,
@@ -428,7 +450,7 @@ const server = createServer(async (req, res) => {
       });
       queue.push(command);
       log(`enqueue cmd=${cmd} client=${client ?? "any"} id=${command.id} queued=${queue.length} timeoutMs=${timeoutMs}`);
-      if (client) deliver(client);
+      if (client) deliverBrowser(client);
       else deliverAny();
       const result = await resultPromise;
       finished = true;

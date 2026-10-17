@@ -18,6 +18,9 @@ const BRIDGE = "http://127.0.0.1:18765";
 const TOKEN = "dsh-bridge-local";
 const CLIENT = navigator.userAgent.includes("Edg/") ? "edge" : "chrome";
 const SOURCE = "dsh-local-browser-bridge";
+let clientId = null;
+let role = "real";
+const USER_AGENT = navigator.userAgent;
 /** Bump together with content.js; used by the readiness handshake. */
 const PROTOCOL = 2;
 const CONTENT_READY_TIMEOUT_MS = 8000;
@@ -31,6 +34,22 @@ const KEEPALIVE_INTERVAL_MS = 20000;
 let polling = false;
 let lastError = null;
 let lastApiKeepaliveAt = 0;
+
+async function loadIdentity() {
+  const stored = await chrome.storage.local.get("dshBridgeClientId");
+  clientId = typeof stored.dshBridgeClientId === "string" && stored.dshBridgeClientId
+    ? stored.dshBridgeClientId
+    : crypto.randomUUID();
+  if (!stored.dshBridgeClientId) await chrome.storage.local.set({ dshBridgeClientId: clientId });
+  try {
+    const response = await fetch(chrome.runtime.getURL("config.json"));
+    const config = await response.json();
+    if (config?.role === "agent" || config?.role === "real") role = config.role;
+  } catch (error) {
+    log("identity config unavailable; defaulting to real", error?.message || error);
+  }
+  return { clientId, role, userAgent: USER_AGENT };
+}
 
 function log(...args) {
   console.log("[dsh-bridge]", ...args);
@@ -56,7 +75,7 @@ async function apiKeepalive() {
 // service worker (messages count as activity), so a dead worker recovers fast.
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message && message.type === "dsh-bridge-keepalive") {
-    sendResponse({ ok: true, client: CLIENT, at: Date.now() });
+    sendResponse({ ok: true, client: CLIENT, clientId, role, at: Date.now() });
   }
   return false;
 });
@@ -365,7 +384,15 @@ async function execute(command) {
 }
 
 async function pollOnce() {
-  const response = await fetch(`${BRIDGE}/poll?token=${TOKEN}&client=${CLIENT}`, {
+  const identity = clientId ? { clientId, role } : await loadIdentity();
+  const params = new URLSearchParams({
+    token: TOKEN,
+    client: CLIENT,
+    clientId: identity.clientId,
+    role: identity.role,
+    userAgent: identity.userAgent,
+  });
+  const response = await fetch(`${BRIDGE}/poll?${params}`, {
     signal: AbortSignal.timeout(POLL_TIMEOUT_MS),
   });
   if (response.status === 204) return false;
@@ -375,9 +402,9 @@ async function pollOnce() {
   let result;
   try {
     const value = await execute(command);
-    result = { id: command.id, ok: true, value, client: CLIENT };
+    result = { id: command.id, ok: true, value, client: CLIENT, clientId: identity.clientId, role: identity.role };
   } catch (error) {
-    result = { id: command.id, ok: false, error: String(error?.message || error), client: CLIENT };
+    result = { id: command.id, ok: false, error: String(error?.message || error), client: CLIENT, clientId: identity.clientId, role: identity.role };
   }
   const posted = await fetch(`${BRIDGE}/result?token=${TOKEN}`, {
     method: "POST",
@@ -413,11 +440,11 @@ async function loop() {
 
 chrome.runtime.onInstalled.addListener(() => {
   log("installed, bridge:", BRIDGE, "client:", CLIENT);
-  loop();
+  loadIdentity().then(loop).catch((error) => log("identity initialization failed", error));
 });
-chrome.runtime.onStartup.addListener(() => loop());
+chrome.runtime.onStartup.addListener(() => loadIdentity().then(loop).catch((error) => log("identity initialization failed", error)));
 if (chrome.alarms) {
   chrome.alarms.create("dsh-bridge-keepalive", { periodInMinutes: 0.5 });
   chrome.alarms.onAlarm.addListener(() => loop());
 }
-loop();
+loadIdentity().then(loop).catch((error) => log("identity initialization failed", error));

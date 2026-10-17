@@ -98,6 +98,14 @@
                                                                                           ]
                                                                           },
                                                                           {
+                                                                              "path": [
+                                                                                  "autoStartBridge"
+                                                                              ],
+                                                                              "label": "自动启动真实浏览器桥 (Auto-start bridge)",
+                                                                              "kind": "boolean",
+                                                                              "hint": "插件加载时启动本地桥；关闭后由 ego_real 按需启动。"
+                                                                          },
+                                                                          {
                                                                               "path":  [
                                                                                            "chromePath"
                                                                                        ],
