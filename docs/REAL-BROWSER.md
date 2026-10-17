@@ -21,7 +21,7 @@ real-browser/
 │  ├─ manifest.json      #     content.js（snapshot/click/fill/read/scroll/wait）
 │  └─ icons/icon-*.png   #     鲸鱼娘图标 16/32/48/128
 ├─ bridge/
-│  ├─ server.mjs         # 本机桥 127.0.0.1:18765（token 校验、按浏览器客户端路由、超时/取消）
+│  ├─ server.mjs         # 本机桥（身份校验、owner nonce 心跳租约、按浏览器客户端路由、超时/取消）
 │  ├─ vision.js          # 鲸鱼娘光标 + 粉框高亮 + 可见阅读/点击/填写
 │  ├─ cli.mjs            # 手动调试用 CLI（agent 工具 ego_real 内部走 HTTP，不依赖它）
 │  └─ verify.mjs         # 17 项能力矩阵（chrome/edge 各跑一遍）
@@ -31,6 +31,8 @@ real-browser/
 ```
 
 - 桥只绑定 `127.0.0.1`，所有请求带固定本地 token；不监听外网。
+- 桥状态 `/status` 会公开固定 `bridgeId` 与当前 `ownerNonce`。插件只接受正确身份的桥；对插件自己启动的桥还会校验 owner nonce，手动启动的无 owner nonce 桥保持兼容；同一端口已被占用时新桥以非零状态退出。
+- 插件启动桥时传递 `EGO_REAL_BRIDGE_PORT`，并以 owner nonce 每约 2.5 秒发送 heartbeat；停止心跳后桥约 5 秒内自动退出，避免残留进程。
 - 扩展只与 `http://127.0.0.1:18765/*` 通信（`host_permissions` 声明），不向任何远端上传数据。
 - 桥/扩展都不读取 cookie 内容；它们操作的是**已登录页面的 DOM**。
 
@@ -85,6 +87,7 @@ node real-browser\bridge\cli.mjs status
 # 能力矩阵（17/17）
 node real-browser\bridge\verify.mjs edge
 node real-browser\bridge\verify.mjs chrome
+node --test real-browser\bridge\stability.test.mjs
 ```
 
 常见问题：

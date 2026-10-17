@@ -6,6 +6,19 @@
 
 ## A. 模块/服务层（已完成，可复现）
 
+### Real-browser bridge stability checks
+
+```powershell
+node --test real-browser\bridge\stability.test.mjs
+node --check real-browser\bridge\server.mjs
+node --check lib\real-browser-tools.mjs
+node --check lib\client.js
+```
+
+The stability test covers bridge identity and duplicate-port failure, owner
+heartbeat lease expiry, and the regression guard against a body-wide
+`MutationObserver` in `lib/client.js`.
+
 | # | 检查 | 结果 | 证据 |
 |---|---|---|---|
 | A1 | 加载冒烟：模块导出 / 35 工具注册 / gateway 路由 / env 接线 / home 布局 / 白名单 / config | **33/33 PASS** | `loadtest\harness.mjs` |

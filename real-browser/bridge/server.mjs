@@ -34,9 +34,12 @@
 import { createServer } from "node:http";
 import { randomUUID } from "node:crypto";
 
-const PORT = Number(process.argv[2] ?? 18765);
+const PORT = Number(process.env.DSH_BRIDGE_PORT ?? process.argv[2] ?? 18765);
 const HOST = "127.0.0.1";
 const TOKEN = process.env.DSH_BRIDGE_TOKEN || "dsh-bridge-local";
+const BRIDGE_ID = "dsh-real-browser-bridge";
+const OWNER_NONCE = process.env.DSH_BRIDGE_OWNER_NONCE || null;
+const OWNER_LEASE_MS = Number(process.env.DSH_BRIDGE_OWNER_LEASE_MS || 5000);
 const COMMAND_TIMEOUT_MS = Number(process.env.DSH_BRIDGE_COMMAND_TIMEOUT_MS || 90000);
 const POLL_HOLD_MS = Number(process.env.DSH_BRIDGE_POLL_HOLD_MS || 8000);
 const MAX_QUEUE = 100;
@@ -44,6 +47,7 @@ const MAX_BODY_BYTES = 8 * 1024 * 1024;
 const CLIENT_STALE_MS = 120000;
 const TRACE_POLLS = process.env.DSH_BRIDGE_TRACE_POLLS === "1";
 const STARTED_AT = Date.now();
+let lastOwnerHeartbeatAt = STARTED_AT;
 
 /** id -> { command, resolve, timer, startedAt } */
 const waiters = new Map();
@@ -312,6 +316,11 @@ const server = createServer(async (req, res) => {
       const now = Date.now();
       return json(res, 200, {
         ok: true,
+        bridgeId: BRIDGE_ID,
+        ownerNonce: OWNER_NONCE,
+        ownerPid: OWNER_PID,
+        ownerLeaseMs: OWNER_NONCE ? OWNER_LEASE_MS : null,
+        ownerHeartbeatMsAgo: OWNER_NONCE ? now - lastOwnerHeartbeatAt : null,
         startedAt: STARTED_AT,
         uptimeMs: now - STARTED_AT,
         clients: Object.fromEntries(
@@ -348,6 +357,16 @@ const server = createServer(async (req, res) => {
           deliveredTo: waiter.command.deliveredTo ?? null,
         })),
       });
+    }
+
+    /* ------------------------- owner heartbeat -------------------- */
+    if (req.method === "POST" && url.pathname === "/heartbeat") {
+      const body = await readBody(req);
+      if (!OWNER_NONCE || body?.ownerNonce !== OWNER_NONCE) {
+        return json(res, 409, { ok: false, error: "bridge-owner: nonce mismatch" });
+      }
+      lastOwnerHeartbeatAt = Date.now();
+      return json(res, 200, { ok: true, bridgeId: BRIDGE_ID, ownerNonce: OWNER_NONCE });
     }
 
     /* --------------------------- enqueue -------------------------- */
@@ -465,6 +484,11 @@ const server = createServer(async (req, res) => {
 server.listen(PORT, HOST, () => {
   log(`dsh-local-browser bridge listening on http://${HOST}:${PORT} (token required)`);
 });
+server.on("error", (error) => {
+  log(`bridge-start-error ${error?.code || "unknown"}: ${error?.message || error}`);
+  process.exitCode = 1;
+  process.exit(1);
+});
 
 /* ------------------------- owner watchdog ------------------------- */
 // The host plugin spawns this bridge detached (so the short-lived command that
@@ -502,6 +526,13 @@ function ownerAlive() {
   }
 }
 const ownerTimer = setInterval(() => {
+  if (OWNER_NONCE && Date.now() - lastOwnerHeartbeatAt > OWNER_LEASE_MS) {
+    clearInterval(ownerTimer);
+    log(`owner heartbeat expired after ${OWNER_LEASE_MS}ms; bridge exiting`);
+    server.close(() => process.exit(0));
+    setTimeout(() => process.exit(0), 500);
+    return;
+  }
   if (ownerAlive()) return;
   clearInterval(ownerTimer);
   log(`owner process ${OWNER_PID} is gone; bridge exiting`);

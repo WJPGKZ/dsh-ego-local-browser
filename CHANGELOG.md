@@ -3,6 +3,19 @@
 本文件记录 **dsh-ego-local-browser** 的版本历史（GitHub 仓库：`WJPGKZ/dsh-ego-local-browser`）。
 更早的详细记录见 [`docs/CHANGELOG-v1.0.1.md`](docs/CHANGELOG-v1.0.1.md) 与 [`docs/CHANGELOG-v1.1.0.md`](docs/CHANGELOG-v1.1.0.md)。
 
+## v1.1.7 — 2026-10-18
+
+### 稳定性
+
+- bridge 增加固定身份、owner nonce 心跳租约和重复端口保护，避免多个 DSH 实例互相接管或留下残留进程。
+- bridge 宿主退出、插件 dispose/HMR 或 heartbeat 超时后自动清理；手动启动的无 owner nonce bridge 保持兼容。
+- 新增 bridge 稳定性回归测试，并补充 client bundle 不引入全 body `MutationObserver` 的保护。
+- 修复发布元数据与真实浏览器扩展 manifest 的 JSON 可解析性，确保插件包可安装。
+
+### 验证限制
+
+- 本环境未提供 Node.js，因此无法执行 `node --test` 与 `node --check`；已执行 `git diff --check` 和 UTF-8 JSON 结构检查。
+
 ## v1.1.6 — 2026-10-17
 
 ### 修复
