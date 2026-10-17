@@ -10,14 +10,18 @@
 
 ```powershell
 node --test real-browser\bridge\stability.test.mjs
+node --test real-browser\bridge\policy.test.mjs
 node --check real-browser\bridge\server.mjs
 node --check lib\real-browser-tools.mjs
+node --check lib\browser-policy.mjs
 node --check lib\client.js
 ```
 
 The stability test covers bridge identity and duplicate-port failure, owner
 heartbeat lease expiry, and the regression guard against a body-wide
-`MutationObserver` in `lib/client.js`.
+`MutationObserver` in `lib/client.js`. The policy test covers default real
+routing, explicit fallback diagnostics, real-only/agent constraints, stale
+client rejection, and agent-only tools.
 
 | # | 检查 | 结果 | 证据 |
 |---|---|---|---|

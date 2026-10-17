@@ -2,7 +2,7 @@
     "$schema":  "https://dsh.community/schemas/dsh-plugin-0.15.json",
     "id":  "dsh-ego-local-browser",
     "name":  "ego-local-browser",
-    "version":  "1.1.7",
+    "version":  "1.1.8",
     "manifestVersion":  "0.15",
     "facets":  {
                    "host":  {
@@ -75,6 +75,27 @@
                                                                               "label":  "空闲自动回收 (Idle auto-stop, minutes)",
                                                                               "kind":  "number",
                                                                               "hint":  "N 分钟没有任何 ego_* 调用后自动关闭后台浏览器进程（0 = 关闭此功能）。下次调用会自动冷启动（约 2-4 秒）。观察窗正在观看不算活动。"
+                                                                          },
+                                                                          {
+                                                                              "path":  [
+                                                                                           "browserMode"
+                                                                                       ],
+                                                                              "label":  "浏览器策略 (Browser routing)",
+                                                                              "kind":  "select",
+                                                                              "options":  [
+                                                                                              {
+                                                                                                  "value":  "real",
+                                                                                                  "label":  "优先真实浏览器，未连接时安全回退 agent"
+                                                                                              },
+                                                                                              {
+                                                                                                  "value":  "real-only",
+                                                                                                  "label":  "仅真实浏览器，未连接时报错"
+                                                                                              },
+                                                                                              {
+                                                                                                  "value":  "agent",
+                                                                                                  "label":  "仅 agent 浏览器"
+                                                                                              }
+                                                                                          ]
                                                                           },
                                                                           {
                                                                               "path":  [

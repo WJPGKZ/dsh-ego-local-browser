@@ -3,6 +3,15 @@
 本文件记录 **dsh-ego-local-browser** 的版本历史（GitHub 仓库：`WJPGKZ/dsh-ego-local-browser`）。
 更早的详细记录见 [`docs/CHANGELOG-v1.0.1.md`](docs/CHANGELOG-v1.0.1.md) 与 [`docs/CHANGELOG-v1.1.0.md`](docs/CHANGELOG-v1.1.0.md)。
 
+## v1.1.8 — 2026-10-18
+
+### 浏览器策略
+
+- 普通页面类 `ego_*` 默认优先路由到用户任务栏里的真实 Chrome/Edge。
+- 真实 bridge 未连接时，默认策略返回明确 `browserRoute` 诊断并安全回退 agent；`real-only` 拒绝回退，`agent` 强制使用隔离浏览器。
+- 隔离任务空间、无人值守调用以及 CDP/网络/文件/任务空间专用工具保持 agent 模式，避免真实浏览器与隔离能力静默混用。
+- 新增策略路由单元测试和设置页配置项。
+
 ## v1.1.7 — 2026-10-18
 
 ### 稳定性

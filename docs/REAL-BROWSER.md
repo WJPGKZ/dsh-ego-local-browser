@@ -46,6 +46,17 @@ real-browser/
 
 ## 4. 工具
 
+### 统一路由策略
+
+普通页面类 `ego_*` 默认优先路由到已连接的真实 Chrome/Edge。真实 bridge 未连接时，
+`browserMode=real` 会返回带 `browserRoute` 的 agent 结果并记录明确 fallback 原因；
+不会把一次调用静默地拆成两个浏览器执行。`browserMode=real-only` 会在未连接时返回
+`real-browser-required`；`browserMode=agent` 始终使用 agent 浏览器。
+
+即使真实浏览器已连接，`isolateSpaces=true`、`unattended=true` 或需要 CDP/网络响应/
+文件上传下载/任务空间的工具也保持 agent 模式。`ego_real` 和 `ego_real_doctor` 始终是
+显式真实浏览器工具。
+
 ### `ego_real`
 
 | action | 作用 |

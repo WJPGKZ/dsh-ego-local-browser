@@ -2,7 +2,7 @@
 
 ![鲸鱼娘](real-browser/extension/icons/icon-128.png)
 
-> v1.1.6：修复 DSH 退出后 bridge 残留导致官方更新/覆盖安装无法替换 exe 的问题（owner watchdog + dispose 清理，GitHub Copilot 三轮评审通过）。
+> v1.1.8：普通页面类 `ego_*` 默认优先使用任务栏里的真实 Chrome/Edge；按策略安全回退 agent，并保留 `real-only` / `agent` 强制模式。
 
 > v1.1.2：新增**真实浏览器模式**（直接操作你任务栏里的 Chrome/Edge，鲸鱼娘光标可见）——见下方「双模式」。
 
@@ -16,6 +16,24 @@
 |---|---|---|---|
 | **真实浏览器模式（默认/推荐）** | **你任务栏里的 Chrome/Edge**（真实 profile） | 你自己的，天然有效 | 日常操作、需要登录的站点、要让用户看见你在做什么 |
 | Agent 浏览器模式（原版能力，保留） | 克隆登录态的独立 agent 浏览器 | 从源浏览器最小复制 + 白名单裁剪 | 无人值守的批量自动化、不能干扰用户窗口的任务 |
+
+### 统一浏览器策略（v1.1.7）
+
+普通页面类 `ego_*` 工具现在默认优先使用任务栏里的真实 Chrome/Edge：`ego_snapshot`、
+`ego_navigate`、`ego_click`、`ego_fill`、`ego_js`、`ego_screenshot`、`ego_page_info`、
+`ego_read_element`、`ego_scroll`、`ego_wait_for_selector` 和 `ego_wait_for_url`。
+
+在设置页「本地浏览器 → 浏览器策略」中选择：
+
+- `real`（默认）：真实浏览器桥已连接就使用真实浏览器；未连接时返回明确路由信息并安全回退 agent。
+- `real-only`：强制真实浏览器；未连接时返回 `real-browser-required`，不会混用 agent。
+- `agent`：强制使用隔离 agent 浏览器。
+
+以下情况始终走 agent：`isolateSpaces=true`、调用标记 `unattended=true`、`ego_cdp`、
+`ego_wait_for_response`、`ego_upload`、`ego_download`、`ego_script`、`ego_cli`、任务空间、
+网络/文件/对话框等需要 agent 专有能力的工具。`ego_real` 仍是显式真实浏览器入口。
+
+也可通过 DSH 设置或配置 API 写入 `browserMode`；不要通过修改宿主全局环境变量切换策略。
 
 ### 真实浏览器模式怎么用
 
