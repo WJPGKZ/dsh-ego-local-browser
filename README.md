@@ -44,6 +44,14 @@
 12. **同步更快**：v1.0.1 起逐条删除 cookie 改为受限并发（6 路分组），本机 532 条删除
     从 ~8.3s 降到 ~4.4s，整次同步 ~11s → ~7.1s。
 
+13. **Edge 作为源浏览器的限制（实测）**：Edge 155 使用微软新的 **Aster App-Bound Encryption**
+    （Local State 里的 os_crypt.aster_app_bound_encrypted_key），cookie 值加密后与
+    Edge 自身的运行环境绑定。把 Edge 的 Local State + Cookies 复制到别的 profile 再启动，
+    只能解出少量明文 cookie（实测 758 个加密项只读出 19 条明文），**认证 cookie 读不出来**。
+    因此本机推荐 **Chrome 作为源**（Chrome 的 App-Bound 复制方案已验证可用）；Edge 仍可作为
+    agent 浏览器二进制（rowserSource: edge），但不要把 Edge 当作登录态来源。
+    该限制来自浏览器安全机制，不是插件缺陷；只有关闭 Edge 的 ApplicationBoundEncryptionEnabled
+    策略（需管理员 + 降低 Edge 数据安全性）才可能绕过，不建议。
 ## 数据落点与回滚
 
 - 目标数据：`E:\AI\DeepSeek\data\dsh-ego-local-browser\`（profile / state / allowlist.json /

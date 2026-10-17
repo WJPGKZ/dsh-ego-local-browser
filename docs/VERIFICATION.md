@@ -55,3 +55,18 @@
 - cookie 值读取拦截是工具入口文本防护（纵深防御），不是沙箱。
 - v1.0.1 的 doctor 文字摘要里 profile 文件大小显示 `undefined`（JSON 数据正确）；v1.0.2 已修，
   已装入 profile，**下次重启生效**（不影响本会话已验收的同步/诊断行为）。
+
+## D. Edge 源实测限制（2026-10-17，CityU 登录态在 Edge 的场景）
+
+用户说明 CityU 的 AIMS/Canvas 登录在 Edge。实测把源切到 Edge 后：
+
+- rowserSource=edge 的同步流程本身正常（Edge 关闭 → 最小复制 Local State 72624 B + Cookies 458752 B、
+  snapshotConsistent=true），但临时 Edge 实例通过 CDP 只读到 **19 条明文 cookie**（Bing/MSN 基础项），
+  Edge cookie 库中 **758 个 v20 加密项无法解密**。
+- 原因：Edge 155 使用微软 **Aster App-Bound Encryption**（os_crypt.aster_app_bound_encrypted_key），
+  加密与 Edge 运行环境绑定；复制 profile 后解不开。cookie 表中 host_key/name 为明文，
+  可确认 Edge 里确实有 CityU 相关 cookie（.cityu.edu.hk 25、uth.cityu.edu.hk 4、
+  sso.canvaslms.com 1、cityuhk-lms.ap.panopto.com 1 等），但值不可读。
+- 处理：按用户指示不再追 Edge 登录态，已 **回退到 Chrome 源**并重新同步成功
+  （555 → 白名单保留 31，snapshotConsistent=true；GitHub 登录态实测仍有效 WJPGKZ）。
+- 结论：本机 rowserSource 保持 **chrome**；Edge 仅可作 agent 浏览器二进制，不作登录态来源。

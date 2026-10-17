@@ -172,6 +172,11 @@ headless 实例读统计（不改同步状态、不写 local-browser.json）。
 
 ---
 
+**Edge 源已知限制（v1.0.2 实测）**：Edge 155 的 Local State 同时包含标准 App-Bound key 与微软
+Aster App-Bound key（os_crypt.aster_app_bound_encrypted_key）。复制 Edge profile 到目标目录后，
+临时 Edge 实例只能解出 19/758 条明文 cookie，认证 cookie 无法解密。因此本机把
+rowserSource 保持为 **chrome**；Edge 仅作为可选的 agent 浏览器二进制，不作为登录态来源。
+（Chrome 的复制方案实测可完整解密 555 条。）
 ## 6. 设置页「本地浏览器」
 
 `settings.section`（DSH 0.2.x 的顶部设置页槽位）新增一页，`id=ego-local-browser`：
