@@ -110,7 +110,12 @@ function auth(url) {
  * ------------------------------------------------------------------ */
 
 function takeCommandFor(clientId, browser) {
-  const index = queue.findIndex((command) => !command.client || command.client === browser);
+  const index = queue.findIndex((command) => {
+    // A command pinned to a clientId must only reach that exact extension
+    // instance; unpinned commands keep the legacy browser-name routing.
+    if (command.clientId) return command.clientId === clientId;
+    return !command.client || command.client === browser;
+  });
   if (index < 0) return null;
   return queue.splice(index, 1)[0];
 }
@@ -398,6 +403,7 @@ const server = createServer(async (req, res) => {
       if (!cmd) return json(res, 400, { ok: false, error: "enqueue: cmd must be a non-empty string" });
       if (queue.length >= MAX_QUEUE) return json(res, 503, { ok: false, error: "bridge-busy: command queue is full" });
       const client = body.client ? String(body.client) : undefined;
+      const clientId = body.clientId ? String(body.clientId) : undefined;
       const requestedTimeout = Number(body.timeoutMs);
       const timeoutMs =
         Number.isFinite(requestedTimeout) && requestedTimeout > 0
@@ -407,6 +413,7 @@ const server = createServer(async (req, res) => {
         id: randomUUID(),
         cmd,
         client,
+        clientId,
         args: body.args && typeof body.args === "object" ? body.args : {},
         queuedAt: Date.now(),
       };
