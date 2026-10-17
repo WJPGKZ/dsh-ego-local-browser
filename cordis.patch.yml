@@ -1,0 +1,12 @@
+# Insert ego-local-browser: structured browser-automation tools (32 ego_* + 2
+# local-browser tools) that drive the vendored ego-lite runtime against the
+# user's own installed Chrome/Edge binary and a minimal copy of its login state
+# (Local State + Default\Network\Cookies, trimmed to a domain allowlist).
+#
+# The row specifier MUST equal the package.json `name` (`dsh-ego-local-browser`):
+# the client-modules scan matches the nearest manifest name against the Loader
+# specifier, and the client bundle's `__ModuleLoader__.load({ id })` uses the
+# same string.
+- insert:
+    - id: dsh-ego-local-browser
+      name: "dsh-ego-local-browser"

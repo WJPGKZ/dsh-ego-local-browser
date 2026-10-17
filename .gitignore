@@ -1,0 +1,12 @@
+node_modules/
+.pnpm-store/
+*.tgz
+*.tar.gz
+*.log
+tmp/
+.acl-recovery/
+scratch/
+scratch-home*/
+copilot-review/
+.DS_Store
+Thumbs.db
