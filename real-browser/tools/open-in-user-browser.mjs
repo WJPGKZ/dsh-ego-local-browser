@@ -13,6 +13,17 @@ import { spawn } from "node:child_process";
 const CHROME = "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe";
 const EDGE = "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe";
 
+function realBrowserEnv(env = process.env) {
+  if (process.platform !== "win32") return { ...env };
+  const userProfile = typeof env.USERPROFILE === "string" ? env.USERPROFILE.trim() : "";
+  if (!userProfile) return { ...env };
+  return {
+    ...env,
+    LOCALAPPDATA: `${userProfile}\\AppData\\Local`,
+    APPDATA: `${userProfile}\\AppData\\Roaming`,
+  };
+}
+
 const [browserArg = "auto", url] = process.argv.slice(2);
 if (!url) {
   console.error("usage: node tools/open-in-user-browser.mjs <chrome|edge|auto> <url>");
@@ -23,6 +34,7 @@ const child = spawn(exe, [url], {
   detached: true,
   stdio: "ignore",
   windowsHide: false,
+  env: realBrowserEnv(),
 });
 child.unref();
 console.log(JSON.stringify({ opened: url, browser: browserArg, exe, pid: child.pid ?? null }));
