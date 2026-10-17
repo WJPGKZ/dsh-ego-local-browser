@@ -94,3 +94,11 @@
 
 - 模块/工具级：见 `docs/VERIFICATION.md`（重启后补真实站点与 UI 证据）。
 - 本轮改动后需要一次 **DSH 完全重启** 才会重新装载 bundle（宿主 bundle/解析快照机制）。
+
+---
+
+## v1.0.2（发布后修复）
+
+- 修复 ego_local_doctor 文字摘要中 profile 文件大小显示 undefined 的问题（JSON 数据本身正确）：
+  摘要现在兼容 doctorReport 的嵌套 profile 字段（profile.localState.bytes / profile.cookies.bytes）。
+- 仓库发布：https://github.com/WJPGKZ/dsh-ego-local-browser

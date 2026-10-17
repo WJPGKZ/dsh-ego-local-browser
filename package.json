@@ -1,6 +1,6 @@
 {
   "name": "dsh-ego-local-browser",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Local-browser fork of dsh-ego-browser: structured browser-automation tools (32 ego_*) that drive the vendored ego-lite runtime against the user's own installed Chrome/Edge, inheriting real login state from a minimal copy (Local State + Cookies) of the source profile, trimmed to a configurable domain allowlist, plus a realtime watch panel, an ego_local_doctor diagnostic tool and a 本地浏览器 settings page. The source profile is never written; all data lives on the configured E: home.",
   "type": "module",
   "main": "./lib/index.js",
