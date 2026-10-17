@@ -2,11 +2,13 @@
 
 ![鲸鱼娘](real-browser/extension/icons/icon-128.png)
 
+> v1.1.6：修复 DSH 退出后 bridge 残留导致官方更新/覆盖安装无法替换 exe 的问题（owner watchdog + dispose 清理，GitHub Copilot 三轮评审通过）。
+
 > v1.1.2：新增**真实浏览器模式**（直接操作你任务栏里的 Chrome/Edge，鲸鱼娘光标可见）——见下方「双模式」。
 
 > 本包是 [`Fisfzy/dsh-ego-browser@0.8.6`](https://github.com/Fisfzy/dsh-ego-browser)（MIT）的**本地浏览器 fork**：
 > 保留原版全部 32 个 `ego_*` 工具、观察窗与运行时，只改"agent 浏览器用哪个浏览器、登录态从哪来"。
-> 本机验证环境：Windows 11 / Chrome 155.0.8059.80 / Edge 155.0.4283.45 / DSH 桌面 0.2.1-rc.1 / node v24.21.0。
+> 本机验证环境：Windows 11 / Chrome 155.0.8059.80 / Edge 155.0.4283.45 / DSH 桌面 0.2.1-rc.2 / node v24.21.0。
 
 ## 双模式（v1.1.0 起）
 
@@ -133,7 +135,7 @@ Chrome/Edge 136+ **禁止在默认 profile 上开远程调试端口**（实测 E
   <img src="https://img.shields.io/badge/Node-%3E%3D22-brightgreen?logo=node.js&logoColor=white" alt="Node >= 22">
 </p>
 
-> **仓库**：`github.com/Fisfzy/ego-browser`｜版本历史见 [CHANGELOG.md](CHANGELOG.md)｜详情页：[dshfind](https://dshfind.com/zh/plugins/Fisfzy/ego-browser)
+> **仓库**：`github.com/WJPGKZ/dsh-ego-local-browser`（本 fork）｜版本历史见 [CHANGELOG.md](CHANGELOG.md)｜原始项目：[dshfind](https://dshfind.com/zh/plugins/Fisfzy/ego-browser)
 
 ### 版本兼容矩阵
 

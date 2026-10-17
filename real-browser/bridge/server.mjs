@@ -465,3 +465,47 @@ const server = createServer(async (req, res) => {
 server.listen(PORT, HOST, () => {
   log(`dsh-local-browser bridge listening on http://${HOST}:${PORT} (token required)`);
 });
+
+/* ------------------------- owner watchdog ------------------------- */
+// The host plugin spawns this bridge detached (so the short-lived command that
+// starts it can return), but the bridge must not outlive DSH itself: a leftover
+// bridge keeps the DeepSeek Harness.exe image locked, so the NSIS updater/installer
+// cannot replace the exe (silent install failure) and the process lingers hidden.
+// Exit as soon as the process that spawned us is gone.
+const OWNER_PID = process.ppid;
+const OWNER_CHECK_MS = 750;
+const OWNER_LOG_INTERVAL_MS = 60000;
+let lastOwnerLogAt = 0;
+function logOwnerCheck(message) {
+  const now = Date.now();
+  if (now - lastOwnerLogAt < OWNER_LOG_INTERVAL_MS) return;
+  lastOwnerLogAt = now;
+  log(message);
+}
+function ownerAlive() {
+  if (!OWNER_PID || OWNER_PID <= 0) return true;
+  try {
+    process.kill(OWNER_PID, 0);
+    return true;
+  } catch (error) {
+    // Only a definitive "no such process" means the owner is gone. EPERM (and
+    // any unexpected error) must keep the bridge alive: a false positive here
+    // would kill a healthy bridge in the middle of a real-browser session.
+    // The check runs every 750 ms, so diagnostics are rate-limited.
+    if (error?.code === "ESRCH") return false;
+    if (error?.code === "EPERM") {
+      logOwnerCheck(`owner check EPERM for ${OWNER_PID}; keeping bridge alive`);
+      return true;
+    }
+    logOwnerCheck(`owner check failed for ${OWNER_PID}: ${error?.message || error}`);
+    return true;
+  }
+}
+const ownerTimer = setInterval(() => {
+  if (ownerAlive()) return;
+  clearInterval(ownerTimer);
+  log(`owner process ${OWNER_PID} is gone; bridge exiting`);
+  server.close(() => process.exit(0));
+  setTimeout(() => process.exit(0), 500);
+}, OWNER_CHECK_MS);
+ownerTimer.unref();
