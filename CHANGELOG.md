@@ -3,6 +3,36 @@
 本文件记录 **dsh-ego-local-browser** 的版本历史（GitHub 仓库：`WJPGKZ/dsh-ego-local-browser`）。
 更早的详细记录见 [`docs/CHANGELOG-v1.0.1.md`](docs/CHANGELOG-v1.0.1.md) 与 [`docs/CHANGELOG-v1.1.0.md`](docs/CHANGELOG-v1.1.0.md)。
 
+## v1.2.0 — 2026-10-18
+
+### 真实浏览器优先 + 桥自启动
+
+- **客户端身份**：扩展每次轮询上报 `clientId` 与 `role`（`config.json` 为 `real` | `agent`），
+  桥按 clientId 区分实例，并在 `/status` 暴露 `clientId` / `role` / `byBrowser` 汇总；老扩展（无 clientId）
+  按 `legacy:<browser>` 登记且默认 `role=real`，保持兼容。
+- **agent 浏览器专用副本**：插件加载时 materialize `real-browser/extension-agent/`（`role: "agent"`），
+  agent 浏览器应加载这一份，真实 Chrome/Edge 加载 `real-browser/extension/`。
+- **真实优先路由**：`resolveBrowserRoute` / `selectClient` 只在 `role=real` 的客户端中选择；
+  `role=agent` 的客户端仅在 `browserMode=agent` 时使用。每个动作返回 `clientId` / `clientRole` / `clientSelection`。
+- **投递期固定**：命令携带 `clientId`，桥只投递给该实例；未带 clientId 的旧命令仍按浏览器名路由。
+  修掉了"真实 Chrome 与 agent 浏览器抢同一条 `chrome` 通道"的竞态。
+- **桥自启动**：新增 `autoStartBridge`（默认 `true`），插件 `apply()` 时即拉起桥；
+  关闭后仍可由 `ego_real` 按需启动。设置页可改，`/ego/api/local-config` 可持久化。
+- **诊断**：`ego_real_doctor` 增加 `clientDetails`（含角色）、`bridgeStarts`、`lastStartError`、`extensionAgentDir`。
+
+### 修复
+
+- `/status` 在 `byBrowser` 处把 `reduce` 的对象传给 `Object.fromEntries`，导致 500 `object is not iterable`。
+- 稳定性测试的心跳请求缺少 token（403）；`policy.test` 期望未跟上 `clientRole` / `clientSelection`。
+
+### 验证（Windows 11 / DSH 桌面 0.2.1-rc.2 / Chrome 155 / Edge 155）
+
+- 三客户端并存（Chrome real + Chrome agent + Edge real）时，`ego_page_info` / `ego_real tabs` / `ego_js`
+  在**不传 client** 的情况下全部命中真实 Chrome，agent 客户端一次未被选中。
+- `client=edge` 命中真实 Edge 并复现 Canvas GE1362 四次 quiz 成绩；`client=chrome` 命中真实 Chrome 并复现 PASS CS1315 Assignment 1 最高 40/40。
+- 桥自启动：插件加载后未调用任何 `ego_*` 即 `/status` 可达（`bridgeStarts: 1`）。
+- `node --check` 全部改动文件通过；`node --test` **10/10**；提交内 0 删除。
+
 ## v1.1.8 — 2026-10-18
 
 ### 浏览器策略
